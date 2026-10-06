@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Surabhi S. Peter — 3D Interactive Portfolio</title>
+  
+  <!-- Three.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <!-- Gaming & Tech Typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --neon-cyan: #00f0ff;
+      --neon-pink: #ff007f;
+      --neon-purple: #8a2be2;
+      --bg-dark: #030712;
+      --panel-bg: rgba(15, 23, 42, 0.65);
+      --panel-border: rgba(0, 240, 255, 0.25);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      scroll-behavior: smooth;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-dark);
+      font-family: 'Rajdhani', sans-serif;
+      color: #f1f5f9;
+      overflow-x: hidden;
+    }
+
+    /* Background Canvas */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* UI Container Overlay */
+    .ui-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      min-height: 100vh;
+      pointer-events: none;
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* HUD Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 1.5rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(3,7,18,0.9) 0%, rgba(3,7,18,0) 100%);
+      z-index: 100;
+      backdrop-filter: blur(5px);
+    }
+
+    .brand-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+    }
+
+    .hud-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      color: #94a3b8;
+    }
+
+    .status-beacon {
+      width: 8px;
+      height: 8px;
+      background-color: var(--neon-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--neon-cyan);
+      animation: pulse 1.5s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.3; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1.3); }
+    }
+
+    /* Layout Sections */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 8rem 2rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3.5rem;
+    }
+
+    /* Sci-Fi HUD Card Frame */
+    .hud-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-left: 4px solid var(--neon-cyan);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 240, 255, 0.05);
+      border-radius: 6px;
+      padding: 2.5rem;
+      clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+      position: relative;
+    }
+
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title::before {
+      content: '//';
+      color: var(--neon-pink);
+    }
+
+    /* Hero Section */
+    .hero-tag {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--neon-pink);
+      letter-spacing: 4px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3.2rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #ffffff;
+      text-transform: uppercase;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+
+    .hero-summary {
+      font-size: 1.25rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      max-width: 850px;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .skill-category {
+      background: rgba(2, 6, 23, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.5rem;
+      border-radius: 4px;
+    }
+
+    .skill-category h4 {
+      font-family: 'Orbitron', sans-serif;
+      color: #f8fafc;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      letter-spacing: 1px;
+    }
+
+    .badge-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--neon-cyan);
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+      border-radius: 2px;
+      transition: all 0.25s ease;
+    }
+
+    .badge:hover {
+      background: var(--neon-cyan);
+      color: var(--bg-dark);
+      box-shadow: 0 0 12px var(--neon-cyan);
+    }
+
+    /* Project Cards */
+    .project-card {
+      background: rgba(2, 6, 23, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.5rem;
+      border-radius: 4px;
+      transition: border-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .project-card:hover {
+      border-color: var(--neon-pink);
+      transform: translateY(-3px);
+    }
+
+    .project-card h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+
+    .project-card p {
+      color: #94a3b8;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    /* Personal Info List */
+    .info-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      font-size: 1.05rem;
+      color: #cbd5e1;
+    }
+
+    .info-list span {
+      color: var(--neon-cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.9rem;
+    }
+
+    /* Contact Button */
+    .cta-btn {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 14px 32px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+      color: #ffffff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-decoration: none;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(255, 0, 127, 0.6);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      color: #64748b;
+      background: rgba(3, 7, 18, 0.9);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    @media (max-width: 768px) {
+      header { padding: 1rem 1.5rem; }
+      main { padding: 6rem 1rem 2rem; }
+      .hero-name { font-size: 2.2rem; }
+      .hud-card { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Three.js Ambient Scene Canvas -->
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="ui-container">
+    <!-- HUD Header -->
+    <header class="interactive">
+      <div class="brand-logo">S.PETER // ENGINE</div>
+      <div class="hud-status">
+        <div class="status-beacon"></div>
+        UNREAL 3D ENVIRONMENT ACTIVE
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero Header Section -->
+      <section class="hud-card interactive">
+        <p class="hero-tag">Digital Media & Animation Specialist[cite: 2]</p>
+        <h1 class="hero-name">Surabhi S. Peter</h1>
+        <p class="hero-summary">
+          Creative and detail-oriented Digital Media & Animation specialist with hands-on expertise in 2D/3D character animation, visual branding, and motion graphics[cite: 2]. Passionate about visual storytelling, dynamic video editing, and conceptualizing engaging brand identities[cite: 2].
+        </p>
+        <a href="#contact" class="cta-btn">Initialize Contact</a>
+      </section>
+
+      <!-- Technical & Creative Skills -->
+      <section class="hud-card interactive">
+        <h2 class="section-title">Technical & Creative Skills</h2>
+        <div class="grid-2">
+          <div class="skill-category">
+            <h4>2D & 3D ANIMATION</h4>
+            <div class="badge-container">
+              <span class="badge">Adobe Animate</span>
+              <span class="badge">Blender 3D</span>
+              <span class="badge">3D Modeling</span>
+              <span class="badge">Motion Graphics</span>
+            </div>
+          </div>
+          <div class="skill-category">
+            <h4>VIDEO EDITING & POST-PRODUCTION</h4>
+            <div class="badge-container">
+              <span class="badge">Adobe After Effects</span>
+              <span class="badge">Video Compositing</span>
+              <span class="badge">Timeline Editing</span>
+            </div>
+          </div>
+          <div class="skill-category">
+            <h4>VISUAL DESIGN & ILLUSTRATION</h4>
+            <div class="badge-container">
+              <span class="badge">Adobe Illustrator</span>
+              <span class="badge">Brand Identity Design</span>
+              <span class="badge">Vector Artwork</span>
+            </div>
+          </div>
+          <div class="skill-category">
+            <h4>CORE COMPETENCIES</h4>
+            <div class="badge-container">
+              <span class="badge">Visual Storyboarding</span>
+              <span class="badge">Concept Design</span>
+              <span class="badge">Character Design</span>
+              <span class="badge">Layouts</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Projects & Practical Experience -->
+      <section class="hud-card interactive">
+        <h2 class="section-title">Key Projects & Experience</h2>
+        <div class="grid-2">
+          <div class="project-card">
+            <h3>Branding & Visual Design</h3>
+            <p>Conceptualized and developed cohesive brand identities, logos, typography systems, color palettes, and promotional collateral[cite: 2].</p>
+          </div>
+          <div class="project-card">
+            <h3>2D & 3D Animation Projects</h3>
+            <p>Produced 2D character movement cycles and 3D animated scenes utilizing Adobe Animate and Blender, focusing on fluid motion and timing[cite: 2].</p>
+          </div>
+          <div class="project-card">
+            <h3>Video Editing & Post-Production</h3>
+            <p>Edited multi-track video projects, integrated motion graphics, synced audio, and applied visual effects using Adobe After Effects[cite: 2].</p>
+          </div>
+          <div class="project-card">
+            <h3>Creative Narrative & Conceptualization</h3>
+            <p>Visual conceptual sketching, scriptwriting, character design, and multi-frame narrative storyboarding[cite: 2].</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Education & Personal Details Grid -->
+      <div class="grid-2">
+        <section class="hud-card interactive">
+          <h2 class="section-title">Education</h2>
+          <div style="margin-bottom: 1.2rem;">
+            <h3 style="font-family: 'Orbitron'; font-size: 1.1rem; color: #fff;">Bachelor of Vocation (B.Voc)</h3>
+            <p style="color: var(--neon-cyan); font-weight: 600;">Digital Media & Animation[cite: 2]</p>
+            <p style="color: #94a3b8;">St. Joseph's University, Bengaluru, Karnataka[cite: 2]</p>
+          </div>
+          <div>
+            <h3 style="font-family: 'Orbitron'; font-size: 1.1rem; color: #fff;">Secondary & Higher Secondary Education</h3>
+            <p style="color: #94a3b8;">Holy Angels' Convent[cite: 2]</p>
+          </div>
+        </section>
+
+        <section class="hud-card interactive" id="contact">
+          <h2 class="section-title">Personal Details & Hobbies</h2>
+          <ul class="info-list">
+            <li><span>LOCATION:</span> Bengaluru, Karnataka, India[cite: 2]</li>
+            <li><span>CREATIVE INTERESTS:</span> Storytelling, Scriptwriting, Character Design[cite: 2]</li>
+            <li><span>ARTS & CULTURE:</span> Visual Culture, Performing Arts, Contemporary Dance[cite: 2]</li>
+            <li><span>DATE OF BIRTH:</span> December 30, 2005[cite: 2]</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <footer class="interactive">
+      SURABHI S. PETER • BENGALURU, KARNATAKA • BUILT WITH THREE.JS ENGINE[cite: 2]
+    </footer>
+  </div>
+
+  <!-- Three.js Interactive 3D Background Script -->
+  <script>
+    // --- THREE.JS ENGINE INITIALIZATION ---
+    const canvas = document.getElementById('bg-canvas');
+    const scene = new THREE.Scene();
+    
+    // Atmospheric volumetric fog (Unreal/Unity aesthetic)
+    scene.fog = new THREE.FogExp2(0x030712, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 2, 12);
+
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // --- MOUSE SENSITIVITY INTERACTION ---
+    const mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+    
+    window.addEventListener('mousemove', (event) => {
+      mouse.targetX = (event.clientX / window.innerWidth - 0.5) * 2;
+      mouse.targetY = -(event.clientY / window.innerHeight - 0.5) * 2;
+    });
+
+    // --- SCENE OBJECTS (GAMING UNREAL REALM) ---
+
+    // 1. Futuristic Wireframe Ground Grid
+    const gridHelper = new THREE.GridHelper(80, 80, 0x00f0ff, 0x1e293b);
+    gridHelper.position.y = -3;
+    scene.add(gridHelper);
+
+    // 2. Floating Cyber Geometry Node Cluster
+    const geometryGroup = new THREE.Group();
+    const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+    const octaGeo = new THREE.OctahedronGeometry(0.7);
+
+    const cubeMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      metalness: 0.9,
+      roughness: 0.1
+    });
+    
+    const cyanWireMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true });
+    const pinkWireMat = new THREE.MeshBasicMaterial({ color: 0xff007f, wireframe: true });
+
+    for (let i = 0; i < 45; i++) {
+      const geo = Math.random() > 0.5 ? boxGeo : octaGeo;
+      const wireMat = Math.random() > 0.4 ? cyanWireMat : pinkWireMat;
+
+      const mesh = new THREE.Mesh(geo, cubeMat);
+      const wire = new THREE.Mesh(geo, wireMat);
+      mesh.add(wire);
+
+      mesh.position.set(
+        (Math.random() - 0.5) * 24,
+        (Math.random() - 0.5) * 14 + 2,
+        (Math.random() - 0.5) * 20
+      );
+
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+      mesh.userData = {
+        rotSpeedX: (Math.random() - 0.5) * 0.015,
+        rotSpeedY: (Math.random() - 0.5) * 0.015,
+        floatOffset: Math.random() * Math.PI * 2
+      };
+
+      geometryGroup.add(mesh);
+    }
+    scene.add(geometryGroup);
+
+    // 3. Glowing Cyber Particles (Floating Dust/Embers)
+    const particleCount = 700;
+    const particleGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      positions[i] = (Math.random() - 0.5) * 35;
+      positions[i + 1] = (Math.random() - 0.5) * 25;
+      positions[i + 2] = (Math.random() - 0.5) * 35;
+    }
+
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const particleMat = new THREE.PointsMaterial({
+      color: 0x00f0ff,
+      size: 0.07,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending
+    });
+
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
+
+    // --- CINEMATIC LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0x0f172a, 1.5);
+    scene.add(ambientLight);
+
+    const cyanPointLight = new THREE.PointLight(0x00f0ff, 6, 25);
+    cyanPointLight.position.set(-6, 4, 3);
+    scene.add(cyanPointLight);
+
+    const magentaPointLight = new THREE.PointLight(0xff007f, 6, 25);
+    magentaPointLight.position.set(6, -2, 3);
+    scene.add(magentaPointLight);
+
+    // --- RENDER & ANIMATION LOOP ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const elapsedTime = clock.getElapsedTime();
+
+      // Smooth Mouse Interpolation (Lerp)
+      mouse.x += (mouse.targetX - mouse.x) * 0.05;
+      mouse.y += (mouse.targetY - mouse.y) * 0.05;
+
+      // Mouse-driven camera parallax
+      camera.position.x = mouse.x * 2.5;
+      camera.position.y = 2 + mouse.y * 1.5;
+      camera.lookAt(0, 0, 0);
+
+      // Mouse-driven scene rotation
+      geometryGroup.rotation.y = mouse.x * 0.25;
+      geometryGroup.rotation.x = -mouse.y * 0.25;
+
+      // Floating object rotation & wave motion
+      geometryGroup.children.forEach((obj) => {
+        obj.rotation.x += obj.userData.rotSpeedX;
+        obj.rotation.y += obj.userData.rotSpeedY;
+        obj.position.y += Math.sin(elapsedTime * 2 + obj.userData.floatOffset) * 0.0025;
+      });
+
+      // Endless forward grid animation
+      gridHelper.position.z = (elapsedTime * 1.2) % 1;
+
+      // Rotate particle field
+      particles.rotation.y = elapsedTime * 0.02;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // --- RESPONSIVE RESIZE ---
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
